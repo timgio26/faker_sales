@@ -1,7 +1,7 @@
 from flask import Flask
 from app.routes.routes import main_bp
 from app.extension import db, migrate
-from app.models.models import Product,Customer
+from app.models.models import Product,Customer,Order,Order_Item
 
 def create_app():
     app = Flask(__name__)

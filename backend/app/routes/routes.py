@@ -1,8 +1,8 @@
 from flask import Blueprint,request,jsonify
-from app.models.models import Product,Customer
+from app.models.models import Product,Customer,Order,Order_Item
 from app.extension import db
 from uuid import UUID
-from app.utils.order_utils import generate_orders
+from app.utils.order_utils import generate_orders,generate_order_v2
 
 main_bp = Blueprint('main', __name__)
 
@@ -17,6 +17,12 @@ def version():
 def get_sales():
     req_date = request.args.get('date')
     order_list,sales_date = generate_orders(req_date)
+    return jsonify({'sales_date':sales_date.isoformat(),'order':order_list}),200
+
+@main_bp.get('/api/salesv2')
+def get_salesv2():
+    req_date = request.args.get('date')
+    order_list,sales_date = generate_order_v2(req_date)
     return jsonify({'sales_date':sales_date.isoformat(),'order':order_list}),200
 
 # get all product
@@ -62,9 +68,11 @@ def del_customer(id):
     customer = Customer.query.get_or_404(UUID(id))
     db.session.delete(customer)
     db.session.commit()
-    return jsonify({'message': 'Customer deleted'}),204  
+    return jsonify({'message': 'Customer deleted'}),204 
 
-
-
-
-
+@main_bp.delete("/api/order")
+def del_order():
+    db.session.query(Order_Item).delete()
+    db.session.query(Order).delete()
+    db.session.commit()
+    return jsonify({'message': 'order deleted'}),204 
