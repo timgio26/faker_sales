@@ -2,7 +2,7 @@ from flask import Blueprint,request,jsonify
 from app.models.models import Product,Customer,Order,Order_Item
 from app.extension import db
 from uuid import UUID
-from app.utils.order_utils import generate_orders,generate_order_v2
+from app.utils.order_utils import generate_orders,generate_order_v2,update_order_status
 
 main_bp = Blueprint('main', __name__)
 
@@ -22,8 +22,10 @@ def get_sales():
 @main_bp.get('/api/salesv2')
 def get_salesv2():
     req_date = request.args.get('date')
+    update_order_status()
     order_list,sales_date = generate_order_v2(req_date)
-    return jsonify({'sales_date':sales_date.isoformat(),'order':order_list}),200
+    data_len=len(order_list)
+    return jsonify({'data':order_list,"meta":{"count":data_len},'error':None}),200
 
 # get all product
 @main_bp.get('/api/products')

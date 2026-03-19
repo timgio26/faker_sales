@@ -141,8 +141,9 @@ def generate_order_v2(req_date):
                 # db.session.commit()
                 
             shipping_cost = random.randint(10,15 if product_cost>500 else 20) * product_cost/100
-
-            new_order = Order(order_id=random_order_id,order_status="Pending",customer_id = random_customer.id,shipping_region=random_region,product_cost=product_cost,shipping_cost=shipping_cost,payment_method=random_payment_method,order_timestamp=random_datetime(sales_date))
+            rand_num= random.randint(1,10)
+            order_status = 'pending' if rand_num<=5 else 'processing' if rand_num<=7 else 'canceled'
+            new_order = Order(order_id=random_order_id,order_status=order_status,customer_id = random_customer.id,shipping_region=random_region,product_cost=product_cost,shipping_cost=shipping_cost,payment_method=random_payment_method,order_timestamp=random_datetime(sales_date))
             db.session.add(new_order)
             db.session.commit()
 
@@ -150,4 +151,35 @@ def generate_order_v2(req_date):
     order_list=[i.to_dict() for i in orders]
     return order_list,sales_date
        
-        
+## pending -> processed -> shipped -> delivered
+def get_new_order_status(status:str): 
+    rand_num = random.randint(1,100)
+    match status.lower():
+        case "pending":
+            new_status = "processing" if rand_num < 80 else "canceled"
+        case 'processing':
+            new_status = "shipped" if rand_num < 95 else "refunded"
+        case 'shipped':
+            new_status = "delivered" if rand_num < 97 else "failed shipping, refunded"
+    return new_status
+
+def update_order_status():
+    pending_orders = Order.query.filter(Order.order_status.like('pending')).filter(Order.order_timestamp<date.today()).all()
+    for i in pending_orders:
+        i.order_status = get_new_order_status('pending')
+
+    processed_orders = Order.query.filter(Order.order_status=='processing').filter(Order.order_timestamp<date.today()-timedelta(days=1)).all()
+    for i in processed_orders:
+        i.order_status = get_new_order_status('processing')
+
+    shipped_orders = Order.query.filter(Order.order_status=='shipped').filter(Order.order_timestamp<date.today()-timedelta(days=2)).all()
+    for i in shipped_orders:
+        if random.randint(1,10)>5:
+            i.order_status = get_new_order_status('shipped')
+
+    print(f"pending orders: {len(pending_orders)}")
+    print(f"processed orders: {len(processed_orders)}")
+    print(f"shipped orders: {len(shipped_orders)}")
+
+    db.session.commit()
+    return None
